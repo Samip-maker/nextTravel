@@ -1,13 +1,7 @@
-import type { NextAuthOptions, Session, EventCallbacks, DefaultSession } from 'next-auth';
+import type { NextAuthOptions, Session } from 'next-auth';
 import { JWT } from 'next-auth/jwt';
 import { getServerSession as getServerSessionHelper } from 'next-auth/next';
 import CredentialsProvider from 'next-auth/providers/credentials';
-
-declare module 'next-auth' {
-  interface EventCallbacks {
-    error: (message: { error: Error }) => Promise<void> | void;
-  }
-}
 
 export const authConfig: NextAuthOptions = {
   debug: process.env.NODE_ENV === 'development',
@@ -91,8 +85,8 @@ export const authConfig: NextAuthOptions = {
       if (new URL(url).origin === baseUrl) return url
       
       // Default redirect based on user role
-      const role = (url as any)?.includes('admin') ? 'admin' : 
-                  (url as any)?.includes('partner') ? 'partner' : 'user';
+      const role = url.includes('admin') ? 'admin' : 
+                  url.includes('partner') ? 'partner' : 'user';
       
       switch (role) {
         case 'admin':
@@ -122,7 +116,7 @@ export const authConfig: NextAuthOptions = {
       async authorize(credentials: Record<string, string> | undefined) {
         if (!credentials) return null;
         
-        const { email, password, rememberMe } = credentials;
+        const { email, rememberMe } = credentials;
         
         try {
           // Add your user lookup and password verification logic here
