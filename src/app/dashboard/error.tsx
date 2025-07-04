@@ -20,7 +20,7 @@ export default function DashboardError({
         Something went wrong!
       </h2>
       <p className="text-muted-foreground mb-6">
-        We couldn't load your dashboard. Please try again.
+        We couldn&#39;t load your dashboard. Please try again.
       </p>
       <Button
         onClick={() => reset()}

@@ -2,6 +2,16 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import User from '@/models/User';
 
+// Define interface for user data
+interface UserData {
+  name: string;
+  email: string;
+  password: string;
+  phone?: string;
+  role: string;
+  employeeId?: string;
+}
+
 // Helper function to handle errors
 const handleError = (message: string, status: number = 400) => {
   console.error(`Signup Error (${status}):`, message);
@@ -17,7 +27,7 @@ export async function POST(request: Request) {
     let body;
     try {
       body = await request.json();
-    } catch (error) {
+    } catch {
       return handleError('Invalid JSON payload');
     }
 
@@ -53,7 +63,7 @@ export async function POST(request: Request) {
       }
 
       // Create user (password will be hashed by the pre-save hook)
-      const userData: any = {
+      const userData: UserData = {
         name: name.trim(),
         email: email.toLowerCase().trim(),
         password,
@@ -73,7 +83,8 @@ export async function POST(request: Request) {
 
       // Return user data without password
       const userObject = user.toObject();
-      const { password: _, ...userWithoutPassword } = userObject;
+      delete userObject.password;
+      const userWithoutPassword = userObject;
 
       return NextResponse.json(
         { 
@@ -83,27 +94,30 @@ export async function POST(request: Request) {
         },
         { status: 201 }
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Database operation failed:', {
-        name: error.name,
-        code: error.code,
-        keyPattern: error.keyPattern,
-        keyValue: error.keyValue,
-        message: error.message,
-        stack: error.stack
+        name: error instanceof Error ? error.name : 'Unknown',
+        code: error && typeof error === 'object' && 'code' in error ? error.code : undefined,
+        keyPattern: error && typeof error === 'object' && 'keyPattern' in error ? error.keyPattern : undefined,
+        keyValue: error && typeof error === 'object' && 'keyValue' in error ? error.keyValue : undefined,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
       });
       
-      if (error.code === 11000) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 11000) {
         // Handle duplicate key error
-        const field = Object.keys(error.keyPattern)[0];
+        const keyPattern = error && typeof error === 'object' && 'keyPattern' in error ? error.keyPattern as Record<string, unknown> : {};
+        const field = Object.keys(keyPattern)[0];
         return handleError(`${field} already exists`);
-      } else if (error.name === 'ValidationError') {
-        const errors = Object.values(error.errors).map((err: any) => err.message);
+      } else if (error instanceof Error && error.name === 'ValidationError') {
+        const validationError = error as { errors: Record<string, { message: string }> };
+        const errors = Object.values(validationError.errors).map((err: { message: string }) => err.message);
         return handleError(errors.join(', '));
       }
-      return handleError('Database operation failed: ' + error.message, 500);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      return handleError('Database operation failed: ' + errorMessage, 500);
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Unexpected error in signup:', error);
     return handleError('An unexpected error occurred', 500);
   }

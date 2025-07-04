@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Loader2, Package, Calendar, Heart } from "lucide-react";
+import { Loader2, Calendar, Heart } from "lucide-react";
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
